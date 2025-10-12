@@ -80,8 +80,8 @@ int zfinder::process_event(PHCompositeNode *topNode)
 
   ++_nprocessed;
   GlobalVertexMap *globalmap = findNode::getClass<GlobalVertexMap>(topNode, "GlobalVertexMap");
-  _zvtx = -150;
-  JetContainer *jetcon = findNode::getClass<JetContainerv1>(topNode, "zzjets");
+  _zvtx = -300;
+  JetContainer *jetcon = findNode::getClass<JetContainerv1>(topNode, "zzjets06");
   TowerInfoContainer *towers[3];
   towers[0] = findNode::getClass<TowerInfoContainer>(topNode, "TOWERINFO_CALIB_CEMC_RETOWER");
   towers[1] = findNode::getClass<TowerInfoContainer>(topNode, "TOWERINFO_CALIB_HCALIN");
@@ -147,7 +147,7 @@ int zfinder::process_event(PHCompositeNode *topNode)
   
   for(int i=0; i<nz; ++i)
     {
-      float testz = -150+i*5;
+      float testz = -300+i*5;
       float testmetric = 0;
       for(int j=0; j<njet; ++j)
 	{

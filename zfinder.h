@@ -10,7 +10,7 @@ class zfinder : public SubsysReco
 {
  public:
 
-  zfinder(const std::string &name = "zfinder", const int debug = 0);
+  zfinder(const std::string &name = "zfinder", const int debug = 0, const bool usez = false, const bool setz = true);
 
   virtual ~zfinder();
 
@@ -34,6 +34,8 @@ class zfinder : public SubsysReco
 
  
  private:
+  bool _setz;
+  bool _usez;
   int _debug;
   std::string _name;
   float _zvtx;

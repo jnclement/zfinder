@@ -107,17 +107,18 @@ int zfinder::process_event(PHCompositeNode *topNode)
   float oppmaxz[2];
   float maxphi[2];
   float oppmaxphi[2];
-  if(usez)
+  if(_usez)
     {
       for(int i=0; i<3; i+=2)
 	{
+	  RawTowerDefs::CalorimeterId caloID = (i==0)?RawTowerDefs::CalorimeterId::CEMC:RawTowerDefs::CalorimeterId::HCALOUT;
 	  for(int j=0; j<((i==0)?24576:1536); ++j)
 	    {
 	      TowerInfo* tower = towers[i]->get_tower_at_channel(j);
 	      if(tower->get_energy() > maxE[i/2])
 		{
 		  maxE[i/2] = tower->get_energy();
-		  int key = towers[i]->encode_key(channel);
+		  int key = towers[i]->encode_key(j);
 		  const RawTowerDefs::keytype geomkey = RawTowerDefs::encode_towerid(caloID, towers[i]->getTowerEtaBin(key), towers[i]->getTowerPhiBin(key));
 
 		  RawTowerGeom* tower_geom = geom[i]->get_tower_geometry(geomkey);
@@ -128,9 +129,10 @@ int zfinder::process_event(PHCompositeNode *topNode)
 	}
       for(int i=0; i<3; i+=2)
 	{
+	  RawTowerDefs::CalorimeterId caloID = (i==0)?RawTowerDefs::CalorimeterId::CEMC:RawTowerDefs::CalorimeterId::HCALOUT;
 	  for(int j=0; j<((i==0)?24576:1536); ++j)
 	    {
-	      int key = towers[i]->encode_key(channel);
+	      int key = towers[i]->encode_key(j);
 	      const RawTowerDefs::keytype geomkey = RawTowerDefs::encode_towerid(caloID, towers[i]->getTowerEtaBin(key), towers[i]->getTowerPhiBin(key));
 	      RawTowerGeom* tower_geom = geom[i]->get_tower_geometry(geomkey);
 	      if(get_dphi(tower_geom->get_phi(), maxphi[i/2]) > 3*M_PI/4)
@@ -159,15 +161,16 @@ int zfinder::process_event(PHCompositeNode *topNode)
 	  oppmaxphi[1] = tempphi;
 	}
 
-      float avgz[2] = 0;;
-      float oppavgz[2] = 0;
-      float sumE[2] = 0;
-      float oppsumE[2] = 0;
+      float avgz[2] = {0};
+      float oppavgz[2] = {0};
+      float sumE[2] = {0};
+      float oppsumE[2] = {0};
       for(int i=0; i<3; i+=2)
 	{
+	  RawTowerDefs::CalorimeterId caloID = (i==0)?RawTowerDefs::CalorimeterId::CEMC:RawTowerDefs::CalorimeterId::HCALOUT;
 	  for(int j=0; j<((i==0)?24576:1536); ++j)
 	    {
-	      int key = towers[i]->encode_key(channel);
+	      int key = towers[i]->encode_key(j);
 	      const RawTowerDefs::keytype geomkey = RawTowerDefs::encode_towerid(caloID, towers[i]->getTowerEtaBin(key), towers[i]->getTowerPhiBin(key));
 	      RawTowerGeom* tower_geom = geom[i]->get_tower_geometry(geomkey);
 	      if(get_dphi(tower_geom->get_phi(), maxphi[i/2]) < M_PI/4 && abs(maxz[i/2] - tower_geom->get_center_z()) < 100)

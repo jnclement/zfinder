@@ -254,7 +254,7 @@ int zfinder::process_event(PHCompositeNode *topNode)
 	
 
   float metric = 999999999;
-  if(_usez)
+  if(!_usez)
     {
       for(int i=0; i<nz; ++i)
 	{

@@ -243,10 +243,13 @@ int zfinder::process_event(PHCompositeNode *topNode)
   else
     {
       if(_debug > 0) cout << "no jets" << endl;
-      return Fun4AllReturnCodes::ABORTEVENT;
+      if(!jetcon)
+	{
+	  return Fun4AllReturnCodes::ABORTEVENT;
+	}
     }
 
-  if(jpt[0] == 0 && _debug > 1)
+  if(jpt[0] == 0 && _debug > 1 && !_usez)
     {
       cout << "NO JETS > 10 GeV!" << endl;
       return Fun4AllReturnCodes::ABORTEVENT;
@@ -292,6 +295,7 @@ int zfinder::process_event(PHCompositeNode *topNode)
 	      joheta[j] /= johsum[j];
 	      testmetric += pow(jemeta[j]-joheta[j],2);
 	    }
+	  if(_debug > 3) cout << "metric: " << testmetric << endl;
 	  if(testmetric < metric)
 	    {
 	      metric = testmetric;

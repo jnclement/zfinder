@@ -166,6 +166,7 @@ int zfinder::process_event(PHCompositeNode *topNode)
       float oppavgz[2] = {0};
       float sumE[2] = {0};
       float oppsumE[2] = {0};
+      if(_debug > 3) cout << avgz[0] << " " << avgz[1] << " " << sumE[0] << " " << sumE[1] << endl;
       for(int i=0; i<3; i+=2)
 	{
 	  RawTowerDefs::CalorimeterId caloID = (i==0)?RawTowerDefs::CalorimeterId::CEMC:RawTowerDefs::CalorimeterId::HCALOUT;

@@ -109,6 +109,7 @@ int zfinder::process_event(PHCompositeNode *topNode)
   float oppmaxphi[2];
   if(_usez)
     {
+      if(_debug > 4) cout << "using z" << endl;
       for(int i=0; i<3; i+=2)
 	{
 	  RawTowerDefs::CalorimeterId caloID = (i==0)?RawTowerDefs::CalorimeterId::CEMC:RawTowerDefs::CalorimeterId::HCALOUT;
@@ -187,6 +188,8 @@ int zfinder::process_event(PHCompositeNode *topNode)
 		}
 	    }
 	}
+
+      if(_debug > 3) cout << avgz[0] << " " << avgz[1] << " " << sumE[0] << " " << sumE[1] << endl;
 
       for(int i=0; i<2; ++i)
 	{
@@ -291,6 +294,7 @@ int zfinder::process_event(PHCompositeNode *topNode)
 		      jemeta[j] += neweta*tower->get_energy();
 		    }
 		}
+	      if(_debug > 3) cout << jemeta[j] << " " << jemsum[j] << " : " << joheta[j] << " " << johsum[j] << endl;
 	      jemeta[j] /= jemsum[j];
 	      joheta[j] /= johsum[j];
 	      testmetric += pow(jemeta[j]-joheta[j],2);

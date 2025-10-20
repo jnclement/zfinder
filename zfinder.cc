@@ -149,17 +149,17 @@ int zfinder::process_event(PHCompositeNode *topNode)
 	    }
 	}
 
-      if(get_dphi(maxphi[0],oppmaxphi[0]) > M_PI/2)
+      if(get_dphi(maxphi[0],maxphi[1]) > M_PI/2)
 	{
 	  float tempE = oppmaxE[0];
 	  float tempz = oppmaxz[0];
 	  float tempphi = oppmaxphi[0];
-	  oppmaxE[0] = oppmaxE[1];
-	  oppmaxz[0] = oppmaxz[1];
-	  oppmaxphi[0] = oppmaxphi[1];
-	  oppmaxE[1] = tempE;
-	  oppmaxz[1] = tempz;
-	  oppmaxphi[1] = tempphi;
+	  oppmaxE[0] = maxE[0];
+	  oppmaxz[0] = maxz[0];
+	  oppmaxphi[0] = maxphi[0];
+	  maxE[0] = tempE;
+	  maxz[0] = tempz;
+	  maxphi[0] = tempphi;
 	}
 
       float avgz[2] = {0};
@@ -191,6 +191,7 @@ int zfinder::process_event(PHCompositeNode *topNode)
 	}
 
       if(_debug > 3) cout << avgz[0] << " " << avgz[1] << " " << sumE[0] << " " << sumE[1] << endl;
+      if(_debug > 3) cout << oppavgz[0] << " " << oppavgz[1] << " " << oppsumE[0] << " " << oppsumE[1] << endl;
 
       for(int i=0; i<2; ++i)
 	{
@@ -247,7 +248,7 @@ int zfinder::process_event(PHCompositeNode *topNode)
   else
     {
       if(_debug > 0) cout << "no jets" << endl;
-      if(!jetcon)
+      if(!jetcon && !_usez)
 	{
 	  return Fun4AllReturnCodes::ABORTEVENT;
 	}

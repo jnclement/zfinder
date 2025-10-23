@@ -88,7 +88,7 @@ int zfinder::process_event(PHCompositeNode *topNode)
 
   ++_nprocessed;
   GlobalVertexMap *globalmap = findNode::getClass<GlobalVertexMap>(topNode, "GlobalVertexMap");
-  _zvtx = -300;
+  _zvtx = -9999;
   JetContainer *jetcon = findNode::getClass<JetContainerv1>(topNode, "zzjets06");
   TowerInfoContainer *towers[3];
   towers[0] = findNode::getClass<TowerInfoContainer>(topNode, (!_usez)?"TOWERINFO_CALIB_CEMC_RETOWER":"TOWERINFO_CALIB_CEMC");
@@ -225,13 +225,13 @@ int zfinder::process_event(PHCompositeNode *topNode)
           if(jet)
             {
 	      float pt = jet->get_pt();
-	      if(pt < 10) continue;
+	      if(pt < 5) continue;
 	      if(pt > jpt[0])
 		{
-		  jets[0] = jet;
-		  jpt[0] = pt;
 		  jpt[1] = jpt[0];
 		  jets[1] = jets[0];
+		  jets[0] = jet;
+		  jpt[0] = pt;
 		}
 	      else if(pt > jpt[1])
 		{
@@ -256,12 +256,12 @@ int zfinder::process_event(PHCompositeNode *topNode)
 
   if(jpt[0] == 0 && _debug > 1 && !_usez)
     {
-      cout << "NO JETS > 10 GeV!" << endl;
+      cout << "NO JETS > 5 GeV!" << endl;
       return Fun4AllReturnCodes::ABORTEVENT;
     }
 	
 
-  float metric = 999999999;
+  float metric = FLT_MAX;
   if(!_usez)
     {
       for(int i=0; i<nz; ++i)
@@ -305,10 +305,11 @@ int zfinder::process_event(PHCompositeNode *topNode)
 	      if(_debug > 3) cout << jemeta[j] << " " << jemsum[j] << " : " << joheta[j] << " " << johsum[j] << endl;
 	      jemeta[j] /= jemsum[j];
 	      joheta[j] /= johsum[j];
+	      if((jemsum[j] == 0 || johsum[j] == 0) && _debug > 1) cout << "zero E sum in at least one calo for a jet" << endl;
 	      testmetric += pow(jemeta[j]-joheta[j],2);
 	    }
 	  if(_debug > 3) cout << "metric: " << testmetric << endl;
-	  if(testmetric < metric)
+	  if(testmetric < metric && testmetric != 0)
 	    {
 	      metric = testmetric;
 	      _zvtx = testz;
@@ -322,6 +323,7 @@ int zfinder::process_event(PHCompositeNode *topNode)
     {
       MbdVertex *vertex = new MbdVertexv1();
       GlobalVertex* gvtx = globalmap->get(0);
+      if(!_usez) _zvtx *= 1.406; //calibration factor from simulation
       vertex->set_z(_zvtx);
       if(gvtx) gvtx->clone_insert_vtx(GlobalVertex::VTXTYPE::CALO,vertex);
       else

@@ -33,10 +33,15 @@ class CaloVtxReco : public SubsysReco
 
   void Print(const std::string &what = "ALL") const override;
 
+  float get_jet_threshold() { return _jet_threshold; }
+
+  void set_jet_threshold(float new_thresh) { _jet_threshold = new_thresh; }
  
  private:
   int _debug;
   std::string _name;
+  std::string _jetnodename;
+  float _jet_threshold{15};
   float _zvtx;
   CaloVertexMap* _calovtxmap;
 };

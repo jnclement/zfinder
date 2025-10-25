@@ -4,13 +4,8 @@
 #include <phool/getClass.h>
 #include <jetbase/JetContainerv1.h>
 #include <jetbase/Jet.h>
-#include <calobase/RawTowerGeomContainer.h>
 #include <calobase/RawTowerGeomContainer_Cylinderv1.h>
 #include <calobase/RawTowerGeom.h>
-#include <calobase/TowerInfoContainer.h>
-#include <calobase/TowerInfoContainerv1.h>
-#include <calobase/TowerInfoContainerv2.h>
-#include <calobase/TowerInfoContainerv3.h>
 #include <calobase/TowerInfoContainerv4.h>
 #include <calobase/TowerInfoDefs.h>
 #include <globalvertex/CaloVertexv1.h>
@@ -20,14 +15,12 @@ static const float radius_EM = 93.5;
 static const float radius_OH = 225.87;
 
 //____________________________________________________________________________..
-CaloVtxReco::CaloVtxReco(const std::string &name, const int debug, const bool usez, const bool setz):
+CaloVtxReco::CaloVtxReco(const std::string &name, const std::string &jetnodename, const int debug):
   SubsysReco(name)
 {
-  _setz = setz;
-  _usez = usez;
   _name = name;
+  _jetnodename = jetnodename;
   _debug = debug;
-  _nprocessed = 0;
 }
 
 //____________________________________________________________________________..
@@ -84,9 +77,9 @@ int CaloVtxReco::Init(PHCompositeNode *topNode)
 int CaloVtxReco::InitRun(PHCompositeNode *topNode)
 {
   if(_debug > 1) cout << "Initializing!" << endl;
-  if(createNodes(topNode) == Fun4AllReturnCodes::ABORTEVENT)
+  if(createNodes(topNode) == Fun4AllReturnCodes::ABORTRUN)
     {
-      return Fun4AllReturnCodes::ABORTEVENT;
+      return Fun4AllReturnCodes::ABORTRUN;
     }
   return Fun4AllReturnCodes::EVENT_OK;
 }
@@ -122,13 +115,10 @@ int CaloVtxReco::process_event(PHCompositeNode *topNode)
   
 
   if(_debug > 1) cout << endl << endl << endl << "CaloVtxReco: Beginning event processing" << endl;
-  if(_nprocessed % 1000 == 0) cout << "processing event " << _nprocessed << endl;
-
-  ++_nprocessed;
-  _zvtx = -9999;
-  JetContainer *jetcon = findNode::getClass<JetContainerv1>(topNode, "zzjets06");
+  _zvtx = std::numeric_limits<float>::quiet_NaN();
+  JetContainer *jetcon = findNode::getClass<JetContainerv1>(topNode, _jetnodename);
   TowerInfoContainer *towers[3];
-  towers[0] = findNode::getClass<TowerInfoContainer>(topNode, (!_usez)?"TOWERINFO_CALIB_CEMC_RETOWER":"TOWERINFO_CALIB_CEMC");
+  towers[0] = findNode::getClass<TowerInfoContainer>(topNode, "TOWERINFO_CALIB_CEMC_RETOWER":"TOWERINFO_CALIB_CEMC");
   towers[1] = findNode::getClass<TowerInfoContainer>(topNode, "TOWERINFO_CALIB_HCALIN");
   towers[2] = findNode::getClass<TowerInfoContainer>(topNode, "TOWERINFO_CALIB_HCALOUT");
 
@@ -153,7 +143,7 @@ int CaloVtxReco::process_event(PHCompositeNode *topNode)
   float jemeta[njet] = {0};
   float joheta[njet] = {0};
 
-  if(jetcon && !_usez)
+  if(jetcon)
     {
       int tocheck = jetcon->size();
       if(_debug > 2) cout << "Found " << tocheck << " jets to check..." << endl;
@@ -163,7 +153,7 @@ int CaloVtxReco::process_event(PHCompositeNode *topNode)
           if(jet)
             {
 	      float pt = jet->get_pt();
-	      if(pt < 5) continue;
+	      if(pt < _jet_threshold) continue;
 	      if(pt > jpt[0])
 		{
 		  jpt[1] = jpt[0];
@@ -186,86 +176,75 @@ int CaloVtxReco::process_event(PHCompositeNode *topNode)
   else
     {
       if(_debug > 0) cout << "no jets" << endl;
-      if(!jetcon && !_usez)
-	{
-	  return Fun4AllReturnCodes::ABORTEVENT;
-	}
+      return Fun4AllReturnCodes::ABORTEVENT;
     }
 
-  if(jpt[0] == 0 && !_usez)
+  if(jpt[0] == 0)
     {
       if(_debug > 2) cout << "NO JETS > 5 GeV!" << endl;
-      return Fun4AllReturnCodes::ABORTEVENT;
     }
 	
 
   float metric = FLT_MAX;
-  if(!_usez)
+  for(int i=0; i<nz; ++i)
     {
-      for(int i=0; i<nz; ++i)
+      float testz = -300+i*5;
+      float testmetric = 0;
+      for(int j=0; j<njet; ++j)
 	{
-	  float testz = -300+i*5;
-	  float testmetric = 0;
-	  for(int j=0; j<njet; ++j)
+	  if(jpt[j] == 0) continue;
+	  jemsum[j] = 0;
+	  johsum[j] = 0;
+	  jemeta[j] = 0;
+	  joheta[j] = 0;
+	  for(auto comp: jets[j]->get_comp_vec())
 	    {
-	      if(jpt[j] == 0) continue;
-	      jemsum[j] = 0;
-	      johsum[j] = 0;
-	      jemeta[j] = 0;
-	      joheta[j] = 0;
-	      for(auto comp: jets[j]->get_comp_vec())
+	      if(_debug > 6) cout << comp.first << " ";
+	      if(comp.first==5 || comp.first == 26) continue;
+	      unsigned int channel = comp.second;
+	      if(comp.first==7 || comp.first == 27)
 		{
-		  if(_debug > 6) cout << comp.first << " ";
-		  if(comp.first==5 || comp.first == 26) continue;
-		  unsigned int channel = comp.second;
-		  if(comp.first==7 || comp.first == 27)
-		    {
-		      TowerInfo* tower = towers[2]->get_tower_at_channel(channel);
-		      if(_debug > 6) cout << "towerE: " << tower->get_energy() << " " << endl;
-		      if(tower->get_energy() < 0.1) continue;
-		      if(_debug > 6) cout << "good tower ";
-		      johsum[j] += tower->get_energy();
-		      float neweta = new_eta(channel, towers[2], geom[2], RawTowerDefs::CalorimeterId::HCALOUT, testz);
-		      joheta[j] += neweta*tower->get_energy();
-		    }
-		  if(comp.first == 13 || comp.first == 28 || comp.first == 25)
-		    {
-		      TowerInfo* tower = towers[0]->get_tower_at_channel(channel);
-		      if(_debug > 6) cout << "towerE: " << tower->get_energy() << " " << endl;
-		      if(tower->get_energy() < 0.1) continue;
-		      if(_debug > 6) cout << "good tower ";
-		      jemsum[j] += tower->get_energy();
-		      float neweta = new_eta(channel, towers[0], geom[1], RawTowerDefs::CalorimeterId::HCALIN, testz);
-		      jemeta[j] += neweta*tower->get_energy();
-		    }
+		  TowerInfo* tower = towers[2]->get_tower_at_channel(channel);
+		  if(_debug > 6) cout << "towerE: " << tower->get_energy() << " " << endl;
+		  if(tower->get_energy() < 0.1) continue;
+		  if(_debug > 6) cout << "good tower ";
+		  johsum[j] += tower->get_energy();
+		  float neweta = new_eta(channel, towers[2], geom[2], RawTowerDefs::CalorimeterId::HCALOUT, testz);
+		  joheta[j] += neweta*tower->get_energy();
 		}
-	      if(_debug > 6) cout << endl;
-	      if(_debug > 3) cout << jemeta[j] << " " << jemsum[j] << " : " << joheta[j] << " " << johsum[j] << endl;
-	      jemeta[j] /= jemsum[j];
-	      joheta[j] /= johsum[j];
-	      if((jemsum[j] == 0 || johsum[j] == 0) && _debug > 1) cout << "zero E sum in at least one calo for a jet" << endl;
-	      testmetric += pow(jemeta[j]-joheta[j],2);
+	      if(comp.first == 13 || comp.first == 28 || comp.first == 25)
+		{
+		  TowerInfo* tower = towers[0]->get_tower_at_channel(channel);
+		  if(_debug > 6) cout << "towerE: " << tower->get_energy() << " " << endl;
+		  if(tower->get_energy() < 0.1) continue;
+		  if(_debug > 6) cout << "good tower ";
+		  jemsum[j] += tower->get_energy();
+		  float neweta = new_eta(channel, towers[0], geom[1], RawTowerDefs::CalorimeterId::HCALIN, testz);
+		  jemeta[j] += neweta*tower->get_energy();
+		}
 	    }
-	  if(_debug > 3) cout << "metric: " << testmetric << endl;
-	  if(testmetric < metric && testmetric != 0)
-	    {
-	      metric = testmetric;
-	      _zvtx = testz;
-	    }
+	  if(_debug > 6) cout << endl;
+	  if(_debug > 3) cout << jemeta[j] << " " << jemsum[j] << " : " << joheta[j] << " " << johsum[j] << endl;
+	  jemeta[j] /= jemsum[j];
+	  joheta[j] /= johsum[j];
+	  if((jemsum[j] == 0 || johsum[j] == 0) && _debug > 1) cout << "zero E sum in at least one calo for a jet" << endl;
+	  testmetric += pow(jemeta[j]-joheta[j],2);
+	}
+      if(_debug > 3) cout << "metric: " << testmetric << endl;
+      if(testmetric < metric && testmetric != 0)
+	{
+	  metric = testmetric;
+	  _zvtx = testz;
 	}
     }
 
   if(_debug > 2) cout << "optimal z: " << _zvtx << endl;
-  if(_setz)
-    {
-      CaloVertex *vertex = new CaloVertexv1();
-      if(!_usez) _zvtx *= 1.406; //calibration factor from simulation
-      vertex->set_z(_zvtx);
-      _calovtxmap->insert(vertex);
-    }
-  if(_debug > 3) cout << "end event" << endl;
+  CaloVertex *vertex = new CaloVertexv1();
+  _zvtx *= 1.406; //calibration factor from simulation
+  vertex->set_z(_zvtx);
+  _calovtxmap->insert(vertex);
+  if(_debug > 3) cout << "CaloVtxReco: end event" << endl;
   return Fun4AllReturnCodes::EVENT_OK;
-    
 }
 //____________________________________________________________________________..
 int CaloVtxReco::ResetEvent(PHCompositeNode *topNode)

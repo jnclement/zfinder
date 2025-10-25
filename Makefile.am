@@ -10,7 +10,7 @@ AM_LDFLAGS = \
   -L$(OFFLINE_MAIN)/lib
 
 pkginclude_HEADERS = \
-  zfinder.h
+  CaloVtxReco.h
 
 ROOTDICTS = 
 
@@ -18,20 +18,20 @@ pcmdir = $(libdir)
 nobase_dist_pcm_DATA = 
 
 lib_LTLIBRARIES = \
-  libzfinder_io.la \
-  libzfinder.la
+  libcalovtxreco_io.la \
+  libcalovtxreco.la
 
-libzfinder_io_la_SOURCES = \
+libcalovtxreco_io_la_SOURCES = \
   $(ROOTDICTS) 
 
-libzfinder_la_SOURCES = \
-  zfinder.cc
+libcalovtxreco_la_SOURCES = \
+  CaloVtxReco.cc
 
-libzfinder_io_la_LIBADD = \
+libcalovtxreco_io_la_LIBADD = \
   -lphool -lSubsysReco -lmbd_io -ljetbase
 
-libzfinder_la_LIBADD = \
-  libzfinder_io.la \
+libcalovtxreco_la_LIBADD = \
+  libcalovtxreco_io.la \
   -lcalo_io \
   -lSubsysReco -lphg4hit -lffaobjects -lmbd_io \
   -ljetbase -lglobalvertex -lcentrality -lcalotrigger -lphparameter
@@ -49,10 +49,10 @@ noinst_PROGRAMS = \
   testexternals
 
 testexternals_io_SOURCES = testexternals.cc
-testexternals_io_LDADD   = libzfinder_io.la
+testexternals_io_LDADD   = libcalovtxreco_io.la
 
 testexternals_SOURCES = testexternals.cc
-testexternals_LDADD   = libzfinder.la
+testexternals_LDADD   = libcalovtxreco.la
 
 testexternals.cc:
 	echo "//*** this is a generated file. Do not commit, do not edit" > $@
